@@ -49,9 +49,7 @@ function Recovery_GUI_OpeningFcn(hObject, eventdata, handles, varargin)
 
     clc;
     handles.fCount = 0;
-    handles.fHead = 'NSoC_';
-    handles.fSeq = '000';
-    handles.fTyp = '.txt';
+
     load('filtcoef');
     handles.gbp = gbp60;
     handles.sosbp = sosbp60;
@@ -103,7 +101,7 @@ function plotStart_pushbutton_Callback(hObject, eventdata, handles)
     if handles.fCount > 0
         handles.fCount = ceil(get_current_timeslot() - start_time);
     else
-        while exist([handles.fHead handles.fSeq(1:length(handles.fSeq)-1) '1' handles.fTyp],'file') ~= 2
+        while exist(get_filename(1), 'file') ~= 2
             if (strcmp(get(handles.plotStart_pushbutton,'UserData'), 'terminate')) || ...
                     (strcmp(get(handles.plotStart_pushbutton,'UserData'), 'pause'))
                 return;
@@ -120,8 +118,7 @@ function plotStart_pushbutton_Callback(hObject, eventdata, handles)
     while (strcmp(get(handles.plotStart_pushbutton,'UserData'), 'running'))
         mytimer0 = get_current_timeslot() - start_time;
         handles.fCount = last_file(hObject, handles.fCount, handles);
-        fname = [handles.fHead handles.fSeq(1:length(handles.fSeq)-...
-            length(int2str(handles.fCount))) int2str(handles.fCount) handles.fTyp];
+        fname = get_filename(handles.fCount);
         plot_one_fig(hObject, fname, handles);
         mytimer = get_current_timeslot() - start_time;
         if mytimer-mytimer0 < 0.9
@@ -167,8 +164,7 @@ function plotStop_pushbutton_Callback(hObject, eventdata, handles)
 
 function er = plot_one_fig(hObject, fname, handles)
     if isempty(fname)
-        fname = [handles.fHead handles.fSeq(1:length(handles.fSeq)-...
-            length(int2str(handles.fCount))) int2str(handles.fCount) handles.fTyp];
+        fname = get_filename(handles.fCount);
     end
     if exist(fname,'file') ~= 2
         er = 1;
@@ -236,8 +232,7 @@ function er = plot_one_fig(hObject, fname, handles)
         S_hat = S_hat./s;
     end
     S_hat = S_hat/sqrt(var(S_hat));
-    fname = [handles.fHead 'r_' handles.fSeq(1:length(handles.fSeq)-...
-            length(int2str(handles.fCount))) int2str(handles.fCount) handles.fTyp];
+    fname = get_filename(handles.fCount, 'NSoC_r_');
     save(fname, 'S_hat', '-ASCII');
     axes(handles.axes1);
     plot((0:T-1)/sample_rate,S_hat);
@@ -291,25 +286,25 @@ function y = data_clean(hObject, x, handles)
     take(1) = 1;
     y = x(:,count(take>0));
 
-function y = last_file(hObject, eventdata, handles)
+function y = last_file(hObject, eventdata)
+% Binary search the index of the last file
     count = 1;
-    if ~isempty(eventdata); count = eventdata; end;
+    if ~isempty(eventdata)
+        count = eventdata;
+    end;
     lo = count;
-    maxN = 10^length(handles.fSeq)-1;
+    maxN = 999;
     up = count+1;
     while 1
         if lo >= up; break; end
         count = floor((lo+up)/2);
-        if exist([handles.fHead handles.fSeq(1:length(handles.fSeq)-...
-            length(int2str(up))) int2str(up) handles.fTyp],'file') == 2
+        if exist(get_filename(up), 'file') == 2
             lo = up;
             up = min(2*lo,maxN);
-        elseif exist([handles.fHead handles.fSeq(1:length(handles.fSeq)-...
-                length(int2str(lo))) int2str(lo) handles.fTyp],'file') ~= 2
+        elseif exist(get_filename(lo), 'file') ~= 2
             up = lo-1;
             lo = max(0,floor(up/2));
-        elseif exist([handles.fHead handles.fSeq(1:length(handles.fSeq)-...
-                length(int2str(count))) int2str(count) handles.fTyp],'file') == 2
+        elseif exist(get_filename(count), 'file') == 2
             if up-lo == 1, break; end
             lo = count;
         else
@@ -319,9 +314,14 @@ function y = last_file(hObject, eventdata, handles)
     end
     y = max(lo,1);
 
-function y = get_current_timeslot(time_slot)
+function y = get_current_timeslot(unit)
 % Get the index of current time slot
-    if ~exist('time_slot', 'var'), time_slot = 10; end
+    if ~exist('unit', 'var'), unit = 10; end
 
     weight = [0 0 86400 3600 60 1]';
-    y = clock * weight / time_slot;
+    y = clock * weight / unit;
+
+function filename = get_filename(count, prefix)
+    if ~exist('prefix', 'var'), prefix = 'NSoC_'; end
+    suffix = '.txt'
+    filename = sprintf('%s%03d%s', prefix, count, suffix);
