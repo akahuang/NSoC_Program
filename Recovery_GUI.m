@@ -85,8 +85,7 @@ function plotStart_pushbutton_Callback(hObject, eventdata, handles)
     if strcmp(get(handles.plotStart_pushbutton,'UserData'), 'running')
         set(handles.plotStart_pushbutton,'UserData','pause');
         set(handles.plotStart_pushbutton,'String','Start');
-        tempMSG = 'Message: Pause!';
-        set(handles.message_staticText,'String',tempMSG);
+        set(handles.message_staticText,'String','Message: Pause!');
         guidata(hObject, handles);
         return;
     else
@@ -136,8 +135,8 @@ function plotOne_pushbutton_Callback(hObject, eventdata, handles)
         disp('no more file');
     end
     set(handles.plotStart_pushbutton,'UserData','pause');
-    tempMSG = ['Message: #' int2str(handles.fCount)];
-    set(handles.message_staticText,'String',tempMSG)
+    message = sprintf('Message: #%d', handles.fCount);
+    set(handles.message_staticText,'String', message);
     guidata(hObject, handles);
 
 function previous_pushbutton_Callback(hObject, eventdata, handles)
@@ -145,8 +144,8 @@ function previous_pushbutton_Callback(hObject, eventdata, handles)
     guidata(hObject, handles);
     plot_one_fig(hObject, eventdata, handles);
     set(handles.plotStart_pushbutton,'UserData','pause');
-    tempMSG = ['Message: #' int2str(handles.fCount)];
-    set(handles.message_staticText,'String',tempMSG);
+    message = sprintf('Message: #%d', handles.fCount);
+    set(handles.message_staticText,'String',message);
     guidata(hObject, handles);
 
 function plotStop_pushbutton_Callback(hObject, eventdata, handles)
@@ -155,8 +154,7 @@ function plotStop_pushbutton_Callback(hObject, eventdata, handles)
     axes(handles.axes1);
     cla;
     initialize(hObject, max(handles.fCount-2,1), handles);
-    tempMSG = 'Message: Ready!';
-    set(handles.message_staticText,'String',tempMSG);
+    set(handles.message_staticText,'String','Message: Ready!');
     set(handles.plotStart_pushbutton,'String','Start');
     set(handles.plotStart_pushbutton,'UserData','terminate');
     set(handles.plotStart_pushbutton,'BackgroundColor','green');
@@ -204,8 +202,8 @@ function er = plot_one_fig(hObject, fname, handles)
     end
     temptoc = toc;
 
-    tempMSG = ['Message: #' int2str(handles.fCount) ' (' num2str(temptoc)  ' sec)'];
-    set(handles.message_staticText,'String',tempMSG);
+    message = sprintf('Message: #%d (%d sec)', handles.fCount, temptoc);
+    set(handles.message_staticText, 'String', message);
 
     S_hat = s_hat_all(s_hat_blood,:)-mean(s_hat_all(s_hat_blood,:));
     if sum(sign(diff(S_hat)))>0; S_hat = -S_hat; end
@@ -264,11 +262,10 @@ function closeGUI(src,evnt)
 % --- Other Functions --- %
 function initialize(hObject, eventdata, handles)
     tempCount = last_file(hObject, eventdata, handles);
-    tempMSG = 'Message: System is Ready!';
-    set(handles.message_staticText,'String',tempMSG);
-    set(handles.plotStart_pushbutton,'UserData','idle');
-    timeStart = get_current_timeslot() - tempCount+2;
-    set(handles.plotStop_pushbutton,'UserData',timeStart);
+    set(handles.message_staticText, 'String', 'Message: System is Ready!');
+    set(handles.plotStart_pushbutton, 'UserData', 'idle');
+    timeStart = get_current_timeslot() - tempCount + 2;
+    set(handles.plotStop_pushbutton, 'UserData', timeStart);
     guidata(hObject, handles);
 
 function y = data_clean(hObject, x, handles)
@@ -287,7 +284,7 @@ function y = data_clean(hObject, x, handles)
     y = x(:,count(take>0));
 
 function y = last_file(hObject, eventdata)
-% Binary search the index of the last file
+% Binary search the index of the last file?
     count = 1;
     if ~isempty(eventdata)
         count = eventdata;
