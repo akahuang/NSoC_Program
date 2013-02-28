@@ -101,7 +101,7 @@ function plotStart_pushbutton_Callback(hObject, eventdata, handles)
     gettime = [0 0 86400 3600 60 1]';
     start_time = get(handles.plotStop_pushbutton,'UserData');
     if handles.fCount > 0
-        handles.fCount = ceil(clock*gettime/10 - start_time);
+        handles.fCount = ceil(get_current_timeslot() - start_time);
     else
         while exist([handles.fHead handles.fSeq(1:length(handles.fSeq)-1) '1' handles.fTyp],'file') ~= 2
             if (strcmp(get(handles.plotStart_pushbutton,'UserData'), 'terminate')) || ...
@@ -112,17 +112,18 @@ function plotStart_pushbutton_Callback(hObject, eventdata, handles)
             pause(5);
         end
         pause(5);
-        start_time = clock*gettime/10 ;
-            handles.fCount = 1;
+        start_time = get_current_timeslot();
+        handles.fCount = 1;
     end
+
     % read and process
     while (strcmp(get(handles.plotStart_pushbutton,'UserData'), 'running'))
-        mytimer0 = clock*gettime/10 - start_time;
+        mytimer0 = get_current_timeslot() - start_time;
         handles.fCount = last_file(hObject, handles.fCount, handles);
         fname = [handles.fHead handles.fSeq(1:length(handles.fSeq)-...
             length(int2str(handles.fCount))) int2str(handles.fCount) handles.fTyp];
         plot_one_fig(hObject, fname, handles);
-        mytimer = clock*gettime/10 - start_time;
+        mytimer = get_current_timeslot() - start_time;
         if mytimer-mytimer0 < 0.9
             pause(mod(mytimer,1)*10+1);disp(mod(mytimer,1)*10+1);
         end
@@ -233,29 +234,10 @@ function er = plot_one_fig(hObject, fname, handles)
             s = spline([-sample_rate p T+sample_rate],[S_hat(p(1)) S_hat(p) S_hat(p(length(p)))],1:T);
         end
         S_hat = S_hat./s;
-    %         take = zeros(2,T);
-    %         take(1,:) = em_guess(S_hat,1);
-    %         take(1,take(1,:)~=0) = xxx(2,take(1,:)~=0);
-    %         take(2,:) = take(1,:)~=0;
-    %         winf = floor(max(diff(find(take(2,:))))*6);
-    %         if mod(winf,2)==1; winf=winf+1; end
-    %         filt = gfilt(winf,winf/5);
-    %         temp = imfilter(take(1,:),filt)./imfilter(take(2,:),filt);
-    %         S_hat = S_hat-temp;
-    %         
-    %         take = zeros(2,T);
-    %         take(1,:) = em_guess(S_hat,1,1);
-    %         take(1,take(1,:)~=0) = xxx(2,take(1,:)~=0);
-    %         take(2,:) = take(1,:)~=0;
-    %         winf = floor(max(diff(find(take(2,:))))*6);
-    %         if mod(winf,2)==1; winf=winf+1; end
-    %         filt = gfilt(winf,winf/5);
-    %         temp = imfilter(take(1,:),filt)./imfilter(take(2,:),filt);
-    %         S_hat = S_hat./temp;
     end
     S_hat = S_hat/sqrt(var(S_hat));
     fname = [handles.fHead 'r_' handles.fSeq(1:length(handles.fSeq)-...
-    length(int2str(handles.fCount))) int2str(handles.fCount) handles.fTyp];
+            length(int2str(handles.fCount))) int2str(handles.fCount) handles.fTyp];
     save(fname, 'S_hat', '-ASCII');
     axes(handles.axes1);
     plot((0:T-1)/sample_rate,S_hat);
@@ -290,8 +272,7 @@ function initialize(hObject, eventdata, handles)
     tempMSG = 'Message: System is Ready!';
     set(handles.message_staticText,'String',tempMSG);
     set(handles.plotStart_pushbutton,'UserData','idle');
-    tempC = clock;
-    timeStart = (tempC(3)*86400+tempC(4)*3600+tempC(5)*60+tempC(6))/10-tempCount+2;
+    timeStart = get_current_timeslot() - tempCount+2;
     set(handles.plotStop_pushbutton,'UserData',timeStart);
     guidata(hObject, handles);
 
@@ -337,3 +318,10 @@ function y = last_file(hObject, eventdata, handles)
         end
     end
     y = max(lo,1);
+
+function y = get_current_timeslot(time_slot)
+% Get the index of current time slot
+    if ~exist('time_slot', 'var'), time_slot = 10; end
+
+    weight = [0 0 86400 3600 60 1]';
+    y = clock * weight / time_slot;
